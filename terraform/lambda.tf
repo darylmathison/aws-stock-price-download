@@ -69,9 +69,10 @@ resource "aws_lambda_function" "extract_market_data_aws_lambda" {
   environment {
     variables = {
       TZ = var.timezone
+      DATA_BUCKET = aws_s3_bucket.data_bucket.arn
+      SYMBOLS = var.symbols_filename
     }
   }
-
 }
 
 resource "aws_cloudwatch_event_rule" "event_rule" {

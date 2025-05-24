@@ -23,10 +23,10 @@ import software.amazon.awssdk.services.s3.S3Client;
 @Service
 public class PriceDataService {
 
-  @Value("${data.bucket.name}")
+  @Value("${env.DATA_BUCKET}")
   private String dataBucketName;
 
-  @Value("${symbols.file.key}")
+  @Value("${env.SYMBOLS}")
   private String symbolsFileKey;
 
   private final AlpacaAPI alpacaAPI;
