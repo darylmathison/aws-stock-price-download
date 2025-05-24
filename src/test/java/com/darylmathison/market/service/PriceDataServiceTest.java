@@ -42,11 +42,11 @@ class PriceDataServiceTest {
     @Mock
     private StockMarketDataEndpoint stockMarketDataEndpoint;
 
-    private PriceDataService priceDataService;
+    private PriceDataServiceImpl priceDataService;
 
     @BeforeEach
     void setUp() {
-        priceDataService = new PriceDataService(alpacaAPI, applicationContext);
+        priceDataService = new PriceDataServiceImpl(alpacaAPI, applicationContext);
         // Optionally set fields via reflection if @Value fields are required in test
         setField(priceDataService, "dataBucketName", "test-bucket");
         setField(priceDataService, "symbolsFileKey", "symbols.txt");
@@ -65,7 +65,7 @@ class PriceDataServiceTest {
         // Prepare symbol list from S3
         String symbolList = "AAPL\nGOOG";
         InputStream symbolStream = new ByteArrayInputStream(symbolList.getBytes());
-        ResponseInputStream<GetObjectResponse> responseStream = new ResponseInputStream<GetObjectResponse>(mock(GetObjectResponse.class), symbolStream);
+        ResponseInputStream<GetObjectResponse> responseStream = new ResponseInputStream<>(mock(GetObjectResponse.class), symbolStream);
         when(applicationContext.getBean(S3Client.class)).thenReturn(s3Client);
         when(s3Client.getObject(any(Consumer.class)))
             .thenReturn(responseStream);
@@ -78,7 +78,6 @@ class PriceDataServiceTest {
 
         List<String> symbols = List.of("AAPL", "GOOG");
         ZonedDateTime now = ZonedDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
-        ZonedDateTime oneWeekAgo = now.minusDays(7);
 
         StockBar bar1 = mock(StockBar.class);
         when(bar1.getTimestamp()).thenReturn(now);
@@ -126,7 +125,7 @@ class PriceDataServiceTest {
         // Given
         String symbolData = "AAPL\nTSLA\nMSFT";
         InputStream inputStream = new ByteArrayInputStream(symbolData.getBytes());
-        ResponseInputStream<GetObjectResponse> responseStream = new ResponseInputStream<GetObjectResponse>(mock(GetObjectResponse.class), inputStream);
+        ResponseInputStream<GetObjectResponse> responseStream = new ResponseInputStream<>(mock(GetObjectResponse.class), inputStream);
         when(s3Client.getObject(any(Consumer.class)))
             .thenReturn(responseStream);
 
