@@ -23,3 +23,9 @@ variable "timeout" {}
 variable "timezone" {
   default = "US/Eastern"
 }
+
+variable "symbols_filename" {
+  default = "symbols.txt"
+}
+
+variable "symbols_location" {}
