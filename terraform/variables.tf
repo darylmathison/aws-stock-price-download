@@ -29,3 +29,7 @@ variable "symbols_filename" {
 }
 
 variable "symbols_location" {}
+
+variable "history_days" {
+  default = 7
+}
