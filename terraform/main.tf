@@ -6,6 +6,10 @@ terraform {
       source = "hashicorp/aws" # Specify the source of the AWS provider
       version = "~> 5.98.0"        # Use a version of the AWS provider that is compatible with version
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "3.7.2"
+    }
   }
 }
 

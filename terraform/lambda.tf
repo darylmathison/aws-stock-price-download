@@ -39,19 +39,19 @@ data "aws_iam_policy_document" "aws_iam_extract_market_data_aws_lambda_iam_polic
   }
 }
 
-resource "aws_iam_role" "iam_for_lambda" {
-  name = "iam_for_lambda"
+resource "aws_iam_role" "iam_for_lambda_2" {
+  name = "iam_for_lambda_2"
   assume_role_policy = data.aws_iam_policy_document.extract_market_data_document.json
 }
 
 resource "aws_iam_role_policy" "aws_lambda_iam_policy" {
   policy = data.aws_iam_policy_document.aws_iam_extract_market_data_aws_lambda_iam_policy_document.json
-  role = aws_iam_role.iam_for_lambda.id
+  role = aws_iam_role.iam_for_lambda_2.id
 }
 
 resource "aws_s3_object" "s3_object_upload" {
   depends_on = [aws_s3_bucket.code_bucket]
-  bucket = var.code_bucket
+  bucket = aws_s3_bucket.code_bucket.bucket
   key    = var.lambda_filename
   source = var.file_location
   etag = filemd5(var.file_location)
@@ -59,10 +59,10 @@ resource "aws_s3_object" "s3_object_upload" {
 
 resource "aws_lambda_function" "extract_market_data_aws_lambda" {
   function_name = var.lambda_function
-  role          = aws_iam_role.iam_for_lambda.arn
+  role          = aws_iam_role.iam_for_lambda_2.arn
   handler       = var.lambda_handler
   source_code_hash = aws_s3_object.s3_object_upload.key
-  s3_bucket     = var.code_bucket
+  s3_bucket     = aws_s3_bucket.code_bucket.bucket
   s3_key        = var.lambda_filename
   runtime       = var.runtime
   timeout       = var.timeout

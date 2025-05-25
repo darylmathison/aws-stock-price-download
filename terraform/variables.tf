@@ -16,8 +16,9 @@ variable "runtime" {
   default = "java21"
 }
 variable "cron_friday_after_market" {
-  default = "0 17 * * 5"
+  default = "cron(0 17 ? * FRI *)"
 }
+
 variable "timeout" {}
 
 variable "timezone" {
