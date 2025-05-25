@@ -39,14 +39,14 @@ data "aws_iam_policy_document" "aws_iam_extract_market_data_aws_lambda_iam_polic
   }
 }
 
-resource "aws_iam_role" "iam_for_lambda_2" {
-  name = "iam_for_lambda_2"
+resource "aws_iam_role" "iam_for_lambda" {
+  name = "iam_for_lambda_${random_id.bucket_suffix.hex}"
   assume_role_policy = data.aws_iam_policy_document.extract_market_data_document.json
 }
 
 resource "aws_iam_role_policy" "aws_lambda_iam_policy" {
   policy = data.aws_iam_policy_document.aws_iam_extract_market_data_aws_lambda_iam_policy_document.json
-  role = aws_iam_role.iam_for_lambda_2.id
+  role = aws_iam_role.iam_for_lambda.id
 }
 
 resource "aws_s3_object" "s3_object_upload" {
@@ -59,7 +59,7 @@ resource "aws_s3_object" "s3_object_upload" {
 
 resource "aws_lambda_function" "extract_market_data_aws_lambda" {
   function_name = var.lambda_function
-  role          = aws_iam_role.iam_for_lambda_2.arn
+  role          = aws_iam_role.iam_for_lambda.arn
   handler       = var.lambda_handler
   source_code_hash = aws_s3_object.s3_object_upload.key
   s3_bucket     = aws_s3_bucket.code_bucket.bucket
