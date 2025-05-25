@@ -33,3 +33,7 @@ variable "symbols_location" {}
 variable "history_days" {
   default = 7
 }
+
+variable "alpacaApiKey" {}
+
+variable "alpacaSecretKey" {}

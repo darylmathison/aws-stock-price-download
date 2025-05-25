@@ -12,6 +12,8 @@ jobs:
 
     env:
       AWS_REGION: ${{ secrets.AWS_REGION }}
+      TF_VAR_alpacaApiKey: ${{ secrets.ALPACA_API_KEY }}
+      TF_VAR_alpacaSecretKey: ${{ secrets.ALPACA_SECRET_KEY }}
 
     steps:
       - name: Checkout code
@@ -49,9 +51,9 @@ jobs:
         working-directory: ./terraform
 
       - name: Terraform Plan
-        run: terraform plan -var-file="vars.tfvars"
+        run: terraform plan -var-file="staging/vars.tfvars"
         working-directory: ./terraform
 
       - name: Terraform Apply (Deploy Lambda)
-        run: terraform apply -var-file="vars.tfvars" -auto-approve
+        run: terraform apply -var-file="staging/vars.tfvars" -auto-approve
         working-directory: ./terraform

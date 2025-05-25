@@ -72,6 +72,8 @@ resource "aws_lambda_function" "extract_market_data_aws_lambda" {
       DATA_BUCKET = aws_s3_bucket.data_bucket.arn
       SYMBOLS = var.symbols_filename
       HISTORY_DAYS = var.history_days
+      ALPACA_API_KEY = var.alpacaApiKey
+      ALPACA_SECRET_KEY = var.alpacaSecretKey
     }
   }
 }

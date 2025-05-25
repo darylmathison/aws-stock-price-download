@@ -4,15 +4,20 @@ import net.jacobpeterson.alpaca.AlpacaAPI;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
 
 @Configuration
 @ComponentScan(basePackages = "com.darylmathison.market") // Scans components in this package
 public class SpringConfig {
 
+  @Value("${env.ALPACA_API_KEY}")
+  private String alpacaApiKey;
+
+  @Value("${env.ALPACA_SECRET_KEY}")
+  private String alpacaSecretKey;
+
   @Bean
   public AlpacaAPI alpacaAPI() {
-    String alpacaApiKey = System.getenv("ALPACA_API_KEY");
-    String alpacaSecretKey = System.getenv("ALPACA_SECRET_KEY");
     return new AlpacaAPI(alpacaApiKey, alpacaSecretKey);
   }
 }
