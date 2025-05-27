@@ -2,7 +2,7 @@
 spring:
   application:
     name: stock-price-download
-  
+
   # Set active profiles
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
@@ -15,18 +15,20 @@ logging:
     org.springframework: INFO
 
 # Custom application properties
-alpaca:
-  apikey: ${ALPACA_API_KEY}
-  secret: ${ALPACA_SECRET_KEY}
-
 data:
   bucket:
     name: ${DATA_BUCKET}
   symbols:
-    file: ${SYMBOLS}
-
+    file: ${SYMBOLS:symbols.txt}
 history:
-  days: ${HISTORY_DAYS}
+  days: ${HISTORY_DAYS:7}
+alpaca:
+  apikey: ${ALPACA_API_KEY}
+  secret: ${ALPACA_SECRET_KEY}
+
+aws:
+  region: ${AWS_REGION}
+
 
 ---
 # Development profile
