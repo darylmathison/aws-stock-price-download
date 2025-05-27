@@ -46,9 +46,11 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Terraform Init
-        run: terraform init
+      - name: Import existing resources
+        run: |
+          bash terraform-import-all.sh staging/vars.tfvars
         working-directory: ./terraform
+        continue-on-error: true
 
       - name: Terraform Plan
         run: terraform plan -var-file="staging/vars.tfvars"
