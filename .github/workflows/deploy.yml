@@ -39,35 +39,12 @@ jobs:
         with:
           terraform_version: 1.8.4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install pathlib
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Import AWS resources with Terraformer
-        run: |
-          python tools/terraformer_import.py \
-            --resources=lambda,iam,s3,cloudwatchevents \
-            --output-dir=terraformer-output \
-            --terraform-dir=terraform \
-            --filters "Name=tag:Environment;Value=staging" \
-            --install
-        env:
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Terraform Plan
         run: terraform plan -var-file="staging/vars.tfvars"
