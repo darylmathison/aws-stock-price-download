@@ -46,6 +46,10 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ./terraform
+
       - name: Terraform Plan
         run: terraform plan -var-file="staging/vars.tfvars"
         working-directory: ./terraform
