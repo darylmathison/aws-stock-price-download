@@ -128,6 +128,7 @@ extract_resources() {
   # Define resources types to extract - easily expandable
   RESOURCE_TYPES=(
     "aws_lambda_function:function_name"
+    "aws_lambda_permission:function_name"
     "aws_iam_role:name"
     "aws_s3_bucket:bucket"
     "aws_cloudwatch_event_rule:name"
@@ -170,6 +171,36 @@ extract_resources() {
             safe_import "${TYPE}.${RESOURCE_NAME}" "$FUNCTION_NAME"
           else
             echo -e "${YELLOW}Could not find matching Lambda function for ${TYPE}.${RESOURCE_NAME}${NC}"
+          fi
+          ;;
+
+        aws_lambda_permission)
+          FUNCTION_NAME=$(grep -A 20 "resource \"${TYPE}\" \"${RESOURCE_NAME}\"" --include="*.tf" . | grep -E "function_name[[:space:]]*=" | head -1 | sed -E "s/.*function_name[[:space:]]*=[[:space:]]*\"?([^\"]*)\"?.*/\1/" 2>/dev/null || echo "")
+          STATEMENT_ID=$(grep -A 20 "resource \"${TYPE}\" \"${RESOURCE_NAME}\"" --include="*.tf" . | grep -E "statement_id[[:space:]]*=" | head -1 | sed -E "s/.*statement_id[[:space:]]*=[[:space:]]*\"?([^\"]*)\"?.*/\1/" 2>/dev/null || echo "")
+          PRINCIPAL=$(grep -A 20 "resource \"${TYPE}\" \"${RESOURCE_NAME}\"" --include="*.tf" . | grep -E "principal[[:space:]]*=" | head -1 | sed -E "s/.*principal[[:space:]]*=[[:space:]]*\"?([^\"]*)\"?.*/\1/" 2>/dev/null || echo "")
+
+          # Resolve any variables
+          FUNCTION_NAME=$(resolve_value "$FUNCTION_NAME")
+          STATEMENT_ID=$(resolve_value "$STATEMENT_ID")
+
+          if [ -z "$FUNCTION_NAME" ]; then
+            FUNCTION_NAME=$(get_terraform_var_value "lambda_function")
+          fi
+
+          if [ -n "$FUNCTION_NAME" ] && [ -n "$STATEMENT_ID" ]; then
+            # For Lambda permissions, we need both the function name and statement ID
+            # The import ID format is: function-name/statement-id
+            IMPORT_ID="${FUNCTION_NAME}/${STATEMENT_ID}"
+
+            # Check if a Lambda function with this name exists
+            if [[ "$AWS_LAMBDA_FUNCTIONS" == *"$FUNCTION_NAME"* ]]; then
+              echo -e "${BLUE}Importing Lambda permission for function ${FUNCTION_NAME} with statement ID ${STATEMENT_ID}${NC}"
+              safe_import "${TYPE}.${RESOURCE_NAME}" "$IMPORT_ID"
+            else
+              echo -e "${YELLOW}Could not find matching Lambda function for permission ${TYPE}.${RESOURCE_NAME}${NC}"
+            fi
+          else
+            echo -e "${YELLOW}Missing function_name or statement_id for ${TYPE}.${RESOURCE_NAME}${NC}"
           fi
           ;;
 
