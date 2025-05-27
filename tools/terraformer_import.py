@@ -9,6 +9,7 @@ import logging
 import shutil
 from pathlib import Path
 import re
+import platform
 
 # Set up logging
 logging.basicConfig(
@@ -29,7 +30,7 @@ def print_colored(text, color):
     """Print text with color"""
     print(f"{color}{text}{NC}")
 
-def run_command(cmd, capture_output=False):
+def run_command(cmd, capture_output=False, cwd=None):
     """Run a shell command and handle errors"""
     try:
         logger.info(f"Running command: {' '.join(cmd)}")
@@ -37,7 +38,8 @@ def run_command(cmd, capture_output=False):
             cmd,
             capture_output=True,
             text=True,
-            check=False
+            check=False,
+            cwd=cwd
         )
 
         if result.stdout and not capture_output:
@@ -56,17 +58,84 @@ def run_command(cmd, capture_output=False):
         logger.error(f"Error running command {' '.join(cmd)}: {e}")
         return False, "", str(e)
 
-def check_terraformer_installed():
-    """Check if Terraformer is installed"""
-    success, stdout, _ = run_command(["terraformer", "version"], capture_output=True)
-    if not success:
-        print_colored("Terraformer is not installed or not in PATH", RED)
-        print_colored("Please install Terraformer first:", YELLOW)
-        print_colored("https://github.com/GoogleCloudPlatform/terraformer#installation", YELLOW)
+def install_terraformer():
+    """Install Terraformer"""
+    print_colored("Installing Terraformer...", BLUE)
+
+    # Determine OS and architecture
+    system = platform.system().lower()
+    arch = platform.machine()
+
+    # Map architecture to terraformer naming
+    arch_map = {
+        'x86_64': 'amd64',
+        'amd64': 'amd64',
+        'arm64': 'arm64',
+        'aarch64': 'arm64'
+    }
+
+    if arch in arch_map:
+        arch = arch_map[arch]
+    else:
+        print_colored(f"Unsupported architecture: {arch}", RED)
         return False
 
-    print_colored(f"Terraformer version: {stdout.strip()}", GREEN)
-    return True
+    # Set Terraformer version
+    version = "0.8.24"
+
+    # Create temporary directory
+    os.makedirs("tmp", exist_ok=True)
+
+    if system == 'linux':
+        binary_name = f"terraformer-aws-linux-{arch}"
+    elif system == 'darwin':
+        binary_name = f"terraformer-aws-darwin-{arch}"
+    else:
+        print_colored(f"Unsupported system: {system}", RED)
+        return False
+
+    # Download URL
+    url = f"https://github.com/GoogleCloudPlatform/terraformer/releases/download/{version}/{binary_name}"
+
+    # Download Terraformer
+    print_colored(f"Downloading Terraformer from {url}", BLUE)
+    success, _, _ = run_command(["curl", "-L", url, "-o", "tmp/terraformer"])
+    if not success:
+        return False
+
+    # Make executable
+    success, _, _ = run_command(["chmod", "+x", "tmp/terraformer"])
+    if not success:
+        return False
+
+    # Move to /usr/local/bin if running as root, otherwise to ~/.local/bin
+    if os.geteuid() == 0:
+        dest_dir = "/usr/local/bin"
+    else:
+        dest_dir = os.path.expanduser("~/.local/bin")
+        os.makedirs(dest_dir, exist_ok=True)
+
+        # Add to PATH if not already there
+        if dest_dir not in os.environ["PATH"]:
+            print_colored(f"Adding {dest_dir} to PATH for this session", YELLOW)
+            os.environ["PATH"] += f":{dest_dir}"
+
+    # Move terraformer to bin directory
+    try:
+        shutil.move("tmp/terraformer", f"{dest_dir}/terraformer")
+        print_colored(f"Terraformer installed to {dest_dir}/terraformer", GREEN)
+    except Exception as e:
+        print_colored(f"Error moving terraformer: {e}", RED)
+        return False
+
+    # Verify installation
+    success, stdout, _ = run_command(["terraformer", "--version"], capture_output=True)
+    if success:
+        print_colored(f"Terraformer installed successfully: {stdout.strip()}", GREEN)
+        return True
+    else:
+        print_colored("Failed to install Terraformer", RED)
+        return False
 
 def prepare_terraform_environment():
     """Prepare Terraform environment by creating necessary directories"""
@@ -81,6 +150,24 @@ def prepare_terraform_environment():
 
     os.makedirs(terraform_plugin_dir, exist_ok=True)
     logger.info(f"Created Terraform plugin directory: {terraform_plugin_dir}")
+
+    # Make sure terraform is initialized
+    return True
+
+def check_terraformer_installed():
+    """Check if Terraformer is installed"""
+    success, stdout, _ = run_command(["terraformer", "version"], capture_output=True)
+    if not success:
+        print_colored("Terraformer is not installed or not in PATH", RED)
+        return False
+
+    print_colored(f"Terraformer version: {stdout.strip()}", GREEN)
+
+    # Verify it's working by running a simple command
+    success, _, _ = run_command(["terraformer", "import", "aws", "--list"], capture_output=True)
+    if not success:
+        print_colored("Terraformer is installed but not working correctly", RED)
+        return False
 
     return True
 
@@ -198,9 +285,10 @@ def process_imported_resources(output_dir, terraform_dir):
                 dst_file = os.path.join(target_dir, file)
                 shutil.copy2(src_file, dst_file)
                 files_copied = True
+                print(f"Copied {src_file} to {dst_file}")
 
     if not files_copied:
-        print_colored("No resources were imported. Check your filter criteria.", RED)
+        print_colored("No resources were imported. Check your filter criteria.", YELLOW)
         return
 
     # Generate import.tf file with import statements
@@ -232,6 +320,26 @@ def process_imported_resources(output_dir, terraform_dir):
     print_colored("2. Run 'terraform init && terraform plan' to verify the imports", BLUE)
     print_colored("3. Modify the imported resources as needed to fit your Terraform code", BLUE)
 
+def initialize_terraform(terraform_dir):
+    """Initialize Terraform in the specified directory"""
+    print_colored(f"Initializing Terraform in {terraform_dir}...", BLUE)
+
+    # Ensure the directory exists
+    os.makedirs(terraform_dir, exist_ok=True)
+
+    # If terraform_dir has a main.tf file, initialize terraform
+    if os.path.exists(os.path.join(terraform_dir, "main.tf")):
+        # Run terraform init
+        success, _, _ = run_command(["terraform", "init"], cwd=terraform_dir)
+        if success:
+            print_colored("Terraform initialized successfully", GREEN)
+        else:
+            print_colored("Failed to initialize Terraform", RED)
+        return success
+    else:
+        print_colored(f"No main.tf found in {terraform_dir}, skipping terraform init", YELLOW)
+        return True
+
 def main():
     """Main function"""
     parser = argparse.ArgumentParser(description="Import AWS resources with Terraformer")
@@ -241,13 +349,21 @@ def main():
     parser.add_argument("--region", help="AWS region (defaults to AWS_REGION env var)")
     parser.add_argument("--profile", help="AWS profile to use")
     parser.add_argument("--filters", nargs="+", help="Filters for resources (e.g. 'Name=tag:Environment;Value=staging')")
-    parser.add_argument("--resource-filter", nargs="+", help="Regex patterns to filter which resources to copy to Terraform directory")
     parser.add_argument("--install", action="store_true", help="Install Terraformer if not already installed")
 
     args = parser.parse_args()
 
     # Check if Terraformer is installed
     if not check_terraformer_installed():
+        if args.install:
+            if not install_terraformer():
+                sys.exit(1)
+        else:
+            print_colored("Terraformer is not installed. Use --install to install it.", RED)
+            sys.exit(1)
+
+    # Initialize Terraform
+    if not initialize_terraform(args.terraform_dir):
         sys.exit(1)
 
     # Verify AWS credentials

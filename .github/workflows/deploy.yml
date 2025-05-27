@@ -56,13 +56,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Install Terraformer
-        run: |
-          TERRAFORMER_VERSION="0.8.24"
-          wget https://github.com/GoogleCloudPlatform/terraformer/releases/download/${TERRAFORMER_VERSION}/terraformer-aws-linux-amd64
-          chmod +x terraformer-aws-linux-amd64
-          sudo mv terraformer-aws-linux-amd64 /usr/local/bin/terraformer
-
       - name: Import AWS resources with Terraformer
         run: |
           python tools/terraformer_import.py \
