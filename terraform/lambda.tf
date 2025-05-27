@@ -40,7 +40,7 @@ data "aws_iam_policy_document" "aws_iam_extract_market_data_aws_lambda_iam_polic
 }
 
 resource "aws_iam_role" "iam_for_lambda" {
-  name = "iam_for_lambda_${random_id.bucket_suffix.hex}"
+  name = "iam_for_lambda"
   assume_role_policy = data.aws_iam_policy_document.extract_market_data_document.json
 }
 
@@ -58,10 +58,11 @@ resource "aws_s3_object" "s3_object_upload" {
 }
 
 resource "aws_lambda_function" "extract_market_data_aws_lambda" {
+  depends_on = [aws_s3_object.s3_object_upload]
   function_name = var.lambda_function
   role          = aws_iam_role.iam_for_lambda.arn
   handler       = var.lambda_handler
-  source_code_hash = aws_s3_object.s3_object_upload.key
+  source_code_hash = filebase64sha256(var.file_location)
   s3_bucket     = aws_s3_bucket.code_bucket.bucket
   s3_key        = var.lambda_filename
   runtime       = var.runtime
@@ -69,7 +70,7 @@ resource "aws_lambda_function" "extract_market_data_aws_lambda" {
   environment {
     variables = {
       TZ = var.timezone
-      DATA_BUCKET = aws_s3_bucket.data_bucket.arn
+      DATA_BUCKET = aws_s3_bucket.data_bucket.bucket
       SYMBOLS = var.symbols_filename
       HISTORY_DAYS = var.history_days
       ALPACA_API_KEY = var.alpacaApiKey
