@@ -1,0 +1,47 @@
+# Application configuration
+spring:
+  application:
+    name: stock-price-download
+  
+  # Set active profiles
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+# Logging configuration
+logging:
+  level:
+    root: INFO
+    com.darylmathison.market: DEBUG
+    org.springframework: INFO
+
+# Custom application properties
+alpaca:
+  apikey: ${ALPACA_API_KEY}
+  secret: ${ALPACA_SECRET_KEY}
+
+data:
+  bucket:
+    name: ${DATA_BUCKET}
+  symbols:
+    file: ${SYMBOLS}
+
+history:
+  days: ${HISTORY_DAYS}
+
+---
+# Development profile
+spring:
+  config:
+    activate:
+      on-profile: dev
+  
+# Add dev-specific configurations here if needed
+
+---
+# Production profile
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+# Add production-specific configurations here

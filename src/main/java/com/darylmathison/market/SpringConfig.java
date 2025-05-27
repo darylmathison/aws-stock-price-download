@@ -10,10 +10,10 @@ import org.springframework.beans.factory.annotation.Value;
 @ComponentScan(basePackages = "com.darylmathison.market") // Scans components in this package
 public class SpringConfig {
 
-  @Value("${env.ALPACA_API_KEY}")
+  @Value("${alpaca.apikey}")
   private String alpacaApiKey;
 
-  @Value("${env.ALPACA_SECRET_KEY}")
+  @Value("${alpaca.secret}")
   private String alpacaSecretKey;
 
   @Bean

@@ -23,13 +23,13 @@ import java.util.zip.GZIPOutputStream;
 @Service
 public class StockPriceServiceImpl implements StockPriceService {
 
-    @Value("${env.DATA_BUCKET}")
+    @Value("${data.bucket.name}")
     private String dataBucketName;
 
-    @Value("${env.SYMBOLS}")
+    @Value("${data.symbols.file}")
     private String symbolsFileKey;
 
-    @Value("${env.HISTORY_DAYS:7}")
+    @Value("${history.days:7}")
     private int historyDays;
 
     private final PriceDataDTO priceDataDTO;
