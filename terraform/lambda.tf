@@ -24,7 +24,10 @@ data "aws_iam_policy_document" "aws_iam_extract_market_data_aws_lambda_iam_polic
 
   statement {
     effect = "Allow"
-    resources = [aws_s3_bucket.data_bucket.arn]
+    resources = [
+      aws_s3_bucket.data_bucket.arn,
+      "${aws_s3_bucket.data_bucket.arn}/*"
+    ]
     actions = [
       "s3:GetObject",
       "s3:GetObjectVersion",
