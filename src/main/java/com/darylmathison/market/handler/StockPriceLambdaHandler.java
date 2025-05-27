@@ -10,15 +10,15 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ConfigurableApplicationContext;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 
 @SpringBootApplication
 @EnableConfigurationProperties
 public class StockPriceLambdaHandler implements RequestHandler<Object, String> {
 
-  private static final Logger logger = LoggerFactory.getLogger(StockPriceLambdaHandler.class);
+  private static final Logger logger = Logger.getLogger(StockPriceLambdaHandler.class.getName());
 
   /**
    * Handle the Lambda request.
@@ -41,11 +41,11 @@ public class StockPriceLambdaHandler implements RequestHandler<Object, String> {
       StockPriceService stockPriceService = applicationContext.getBean(StockPriceService.class);
 
       int recordCount = stockPriceService.getPriceData();
-      logger.info("Downloaded {} stock price records", recordCount);
+      logger.info("Downloaded " + recordCount + " stock price records");
       return String.format("{\"success\": true, \"recordsProcessed\": %d}", recordCount);
     } catch (Exception e) {
       // Lambda error handling
-      logger.error("Failed to process request", e);
+      logger.log(Level.SEVERE, "Failed to process request", e);
       return String.format("{\"success\": false, \"error\": \"%s\"}", e.getMessage());
     }
   }
