@@ -35,6 +35,10 @@ variable "history_days" {
   default = 7
 }
 
-variable "alpacaApiKey" {}
+variable "alpacaApiKey" {
+  sensitive   = true
+}
 
-variable "alpacaSecretKey" {}
+variable "alpacaSecretKey" {
+  sensitive   = true
+}
