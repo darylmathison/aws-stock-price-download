@@ -70,6 +70,7 @@ resource "aws_lambda_function" "extract_market_data_aws_lambda" {
   s3_key        = var.lambda_filename
   runtime       = var.runtime
   timeout       = var.timeout
+  memory_size = 512
   environment {
     variables = {
       TZ = var.timezone
