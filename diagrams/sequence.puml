@@ -1,0 +1,17 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+autonumber
+
+StockPriceLambdaHandler -> StockPriceService: getPriceData()
+StockPriceService -> S3Service: getObject() Request
+S3Service -> StockPriceService: getObject() Response
+StockPriceService -> PriceDataDTO: getPriceData()
+PriceDataDTO -> AlpacaAPI: getBars() Request
+AlpacaAPI -> PriceDataDTO: getBars() Response
+PriceDataDTO -> StockPriceService: getPriceData()
+StockPriceService -> S3Service: putObject() Request
+S3Service -> StockPriceService: putObject() Response
+StockPriceService -> StockPriceLambdaHandler: getPriceData()
+
+@enduml
