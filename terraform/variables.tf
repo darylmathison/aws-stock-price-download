@@ -32,7 +32,7 @@ variable "symbols_filename" {
 variable "symbols_location" {}
 
 variable "history_days" {
-  default = 7
+  default = 5
 }
 
 variable "alpacaApiKey" {
@@ -41,4 +41,8 @@ variable "alpacaApiKey" {
 
 variable "alpacaSecretKey" {
   sensitive   = true
+}
+
+variable "symbols_batch_size" {
+  default = 6000
 }

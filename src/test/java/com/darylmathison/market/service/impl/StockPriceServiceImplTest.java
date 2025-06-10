@@ -39,6 +39,7 @@ class StockPriceServiceImplTest {
         setField(stockPriceService, "dataBucketName", "test-bucket");
         setField(stockPriceService, "symbolsFileKey", "symbols.txt");
         setField(stockPriceService, "historyDays", 30);
+        setField(stockPriceService, "symbolsBatchSize", 2); // Set batch size to 2 for testing
     }
 
     private void setField(Object target, String fieldName, Object value) {
@@ -56,7 +57,7 @@ class StockPriceServiceImplTest {
         when(s3Service.fetchList(eq("test-bucket"), eq("symbols.txt"))).thenReturn(symbols);
 
         ZonedDateTime now = ZonedDateTime.now();
-        List<StorageStockBar> mockData = List.of(
+        List<StorageStockBar> mockDataBatch1 = List.of(
             StorageStockBar.builder()
                 .symbol("AAPL")
                 .timestamp(now)
@@ -77,32 +78,66 @@ class StockPriceServiceImplTest {
                 .build()
         );
 
+        List<StorageStockBar> mockDataBatch2 = List.of(
+            StorageStockBar.builder()
+                .symbol("MSFT")
+                .timestamp(now)
+                .open(300.0)
+                .close(305.0)
+                .high(310.0)
+                .low(295.0)
+                .volume(750000L)
+                .build()
+        );
+
         LocalDate today = LocalDate.now();
         LocalDate startDate = today.minusDays(30);
 
-        when(priceDataDTO.getPriceData(eq(symbols), eq(startDate), eq(today))).thenReturn(mockData);
+        // First batch: AAPL, GOOG
+        when(priceDataDTO.getPriceData(eq(List.of("AAPL", "GOOG")), eq(startDate), eq(today)))
+            .thenReturn(mockDataBatch1);
+
+        // Second batch: MSFT
+        when(priceDataDTO.getPriceData(eq(List.of("MSFT")), eq(startDate), eq(today)))
+            .thenReturn(mockDataBatch2);
 
         // When
         int result = stockPriceService.getPriceData();
 
         // Then
-        assertEquals(2, result);
+        assertEquals(3, result); // 2 from the first batch + 1 from the second batch
 
         // Verify S3 service calls
         verify(s3Service).fetchList(eq("test-bucket"), eq("symbols.txt"));
 
-        // Verify price data DTO call
-        verify(priceDataDTO).getPriceData(eq(symbols), eq(startDate), eq(today));
+        // Verify price data DTO calls for each batch
+        verify(priceDataDTO).getPriceData(eq(List.of("AAPL", "GOOG")), eq(startDate), eq(today));
+        verify(priceDataDTO).getPriceData(eq(List.of("MSFT")), eq(startDate), eq(today));
 
-        // Verify S3 upload with correct key format
+        // Verify S3 upload with the correct key format for each batch
         ArgumentCaptor<String> keyCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<byte[]> dataCaptor = ArgumentCaptor.forClass(byte[].class);
 
-        verify(s3Service).putObject(eq("test-bucket"), keyCaptor.capture(), dataCaptor.capture());
+        // Verify putObject was called twice (once for each batch)
+        verify(s3Service, times(2)).putObject(eq("test-bucket"), keyCaptor.capture(), dataCaptor.capture());
 
-        String expectedKeyPrefix = "stock_prices/prices_" + today.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-        assertTrue(keyCaptor.getValue().startsWith(expectedKeyPrefix));
-        assertTrue(dataCaptor.getValue().length > 0);
+        List<String> capturedKeys = keyCaptor.getAllValues();
+        List<byte[]> capturedData = dataCaptor.getAllValues();
+
+        assertEquals(2, capturedKeys.size());
+        assertEquals(2, capturedData.size());
+
+        String dateFormat = today.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
+        // Verify first batch key format
+        String expectedKey1 = "stock_prices_" + dateFormat + "_1.csv.gz";
+        assertEquals(expectedKey1, capturedKeys.getFirst());
+        assertTrue(capturedData.getFirst().length > 0);
+
+        // Verify second batch key format
+        String expectedKey2 = "stock_prices_" + dateFormat + "_2.csv.gz";
+        assertEquals(expectedKey2, capturedKeys.get(1));
+        assertTrue(capturedData.get(1).length > 0);
     }
 
     @Test

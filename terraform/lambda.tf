@@ -79,6 +79,7 @@ resource "aws_lambda_function" "extract_market_data_aws_lambda" {
       HISTORY_DAYS = var.history_days
       ALPACA_API_KEY = var.alpacaApiKey
       ALPACA_SECRET_KEY = var.alpacaSecretKey
+      SYMBOLS_BATCH_SIZE = var.symbols_batch_size
     }
   }
 }
