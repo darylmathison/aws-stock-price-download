@@ -33,8 +33,11 @@ public class StockPriceServiceImpl implements StockPriceService {
     @Value("${data.symbols.file}")
     private String symbolsFileKey;
 
-    @Value("${history.days:7}")
+    @Value("${history.days:5}")
     private int historyDays;
+
+    @Value("${data.symbols.batch-size:3000}")
+    private int symbolsBatchSize;
 
     private final PriceDataDTO priceDataDTO;
     private final S3Service s3Service;
@@ -63,22 +66,37 @@ public class StockPriceServiceImpl implements StockPriceService {
             LocalDate startDate = endDate.minusDays(historyDays);
             logger.info("Downloading price data from " + startDate + " to " + endDate);
 
-            // Get price data
-            List<StorageStockBar> priceData = priceDataDTO.getPriceData(symbols, startDate, endDate);
-            logger.info("Retrieved " + priceData.size() + " price records");
+            // Process symbols in batches
+            int totalRecords = 0;
+            for (int i = 0; i < symbols.size(); i += symbolsBatchSize) {
+                int endIndex = Math.min(i + symbolsBatchSize, symbols.size());
+                List<String> symbolsBatch = symbols.subList(i, endIndex);
+                int batchNumber = i / symbolsBatchSize + 1;
+                logger.info("Processing batch " + batchNumber + 
+                           " with " + symbolsBatch.size() + " symbols (from index " + i + " to " + (endIndex - 1) + ")");
 
-            // Convert to compressed CSV
-            byte[] compressedData = generateCompressedCSV(priceData);
-            logger.info("Generated compressed CSV data: " + compressedData.length + " bytes");
+                // Get price data for this batch
+                List<StorageStockBar> batchPriceData = priceDataDTO.getPriceData(symbolsBatch, startDate, endDate);
+                logger.info("Retrieved " + batchPriceData.size() + " price records for current batch");
 
-            // Create S3 key with today's date
-            String key = generateS3Key(endDate);
+                // Convert batch data to compressed CSV
+                byte[] compressedData = generateCompressedCSV(batchPriceData);
+                logger.info("Generated compressed CSV data for batch " + batchNumber + ": " + compressedData.length + " bytes");
 
-            // Upload to S3
-            s3Service.putObject(dataBucketName, key, compressedData);
-            logger.info("Successfully uploaded price data to S3: " + key);
+                // Create S3 key with today's date and batch number
+                String key = generateS3Key(endDate, batchNumber);
 
-            return priceData.size();
+                // Upload batch to S3
+                s3Service.putObject(dataBucketName, key, compressedData);
+                logger.info("Successfully uploaded batch " + batchNumber + " price data to S3: " + key);
+
+                // Add to the total count
+                totalRecords += batchPriceData.size();
+            }
+
+            logger.info("Total retrieved price records: " + totalRecords);
+
+            return totalRecords;
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Failed to process price data: " + e.getMessage(), e);
             throw new RuntimeException("Failed to process price data: " + e.getMessage(), e);
@@ -86,11 +104,11 @@ public class StockPriceServiceImpl implements StockPriceService {
     }
 
     /**
-     * Generates an S3 key in the format "stock_prices/prices_{year}-{month}-{day}.csv.gz"
+     * Generates an S3 key in the format "stock_prices_YYYY-MM-DD_{batch number}.csv.gz"
      */
-    private String generateS3Key(LocalDate date) {
+    private String generateS3Key(LocalDate date, int batchNumber) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        return String.format("stock_prices/prices_%s.csv.gz", date.format(formatter));
+        return String.format("stock_prices_%s_%d.csv.gz", date.format(formatter), batchNumber);
     }
 
     /**

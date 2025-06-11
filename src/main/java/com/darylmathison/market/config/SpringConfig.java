@@ -1,5 +1,7 @@
-package com.darylmathison.market;
+package com.darylmathison.market.config;
 
+import com.darylmathison.market.model.ApiKeyPair;
+import com.darylmathison.market.service.SecretsService;
 import net.jacobpeterson.alpaca.AlpacaAPI;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Bean;
@@ -14,18 +16,16 @@ import software.amazon.awssdk.services.s3.S3Client;
 @ComponentScan(basePackages = "com.darylmathison.market") // Scans components in this package
 public class SpringConfig {
 
-  @Value("${alpaca.apikey}")
-  private String alpacaApiKey;
-
-  @Value("${alpaca.secret}")
-  private String alpacaSecretKey;
-
   @Value("${aws.region}")
   private String awsRegion;
 
+  @Value("${alpaca.secret-name}")
+  private String alpacaSecretName;
+
   @Bean
-  public AlpacaAPI alpacaAPI() {
-    return new AlpacaAPI(alpacaApiKey, alpacaSecretKey);
+  public AlpacaAPI alpacaAPI(SecretsService secretsService) {
+    ApiKeyPair alpacaApiKeyPair = secretsService.getSecretApiKeyPair(alpacaSecretName);
+    return new AlpacaAPI(alpacaApiKeyPair.getApiKey(), alpacaApiKeyPair.getSecretKey());
   }
 
   @Bean

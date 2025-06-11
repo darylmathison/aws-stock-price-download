@@ -20,12 +20,11 @@ data:
     name: ${DATA_BUCKET}
   symbols:
     file: ${SYMBOLS:symbols.txt}
+    batch-size: ${SYMBOLS_BATCH_SIZE:6000}
 history:
-  days: ${HISTORY_DAYS:7}
+  days: ${HISTORY_DAYS:5}
 alpaca:
-  apikey: ${ALPACA_API_KEY}
-  secret: ${ALPACA_SECRET_KEY}
-
+  secret-name: ${ALPACA_SECRET_NAME}
 aws:
   region: ${AWS_REGION}
 
@@ -36,7 +35,7 @@ spring:
   config:
     activate:
       on-profile: dev
-  
+
 # Add dev-specific configurations here if needed
 
 ---

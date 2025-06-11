@@ -52,6 +52,12 @@ resource "aws_iam_role_policy" "aws_lambda_iam_policy" {
   role = aws_iam_role.iam_for_lambda.id
 }
 
+resource "aws_iam_role_policy_attachment" "lambda_secrets_access" {
+  role       = aws_iam_role.iam_for_lambda.name
+  policy_arn = aws_iam_policy.alpaca_secrets_read_policy.arn
+}
+
+
 resource "aws_s3_object" "s3_object_upload" {
   depends_on = [aws_s3_bucket.code_bucket]
   bucket = aws_s3_bucket.code_bucket.bucket
@@ -77,8 +83,8 @@ resource "aws_lambda_function" "extract_market_data_aws_lambda" {
       DATA_BUCKET = aws_s3_bucket.data_bucket.bucket
       SYMBOLS = var.symbols_filename
       HISTORY_DAYS = var.history_days
-      ALPACA_API_KEY = var.alpacaApiKey
-      ALPACA_SECRET_KEY = var.alpacaSecretKey
+      ALPACA_SECRET_NAME = aws_secretsmanager_secret.alpaca_api_key.name
+      SYMBOLS_BATCH_SIZE = var.symbols_batch_size
     }
   }
 }
