@@ -44,7 +44,7 @@ public class SecretsServiceImpl implements SecretsService {
         return getSecretValueResponse.secretString();
     } catch (SecretsManagerException e) {
         System.err.println("Error retrieving secret: " + e.awsErrorDetails().errorMessage());
-        return null;
+        throw new RuntimeException("Failed to retrieve secret: " + e.awsErrorDetails().errorMessage(), e);
     }
   }
 
