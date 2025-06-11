@@ -2,7 +2,7 @@ package com.darylmathison.market.handler;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.darylmathison.market.SpringConfig;
+import com.darylmathison.market.config.SpringConfig;
 import com.darylmathison.market.service.StockPriceService;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;

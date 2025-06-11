@@ -24,9 +24,7 @@ data:
 history:
   days: ${HISTORY_DAYS:5}
 alpaca:
-  apikey: ${ALPACA_API_KEY}
-  secret: ${ALPACA_SECRET_KEY}
-
+  secret-name: ${ALPACA_SECRET_NAME}
 aws:
   region: ${AWS_REGION}
 
