@@ -1,5 +1,5 @@
 resource "aws_secretsmanager_secret" "alpaca_api_key" {
-  name        = "alpaca_api_key"
+  name        = "download_alpaca_api_key"
   description = "Secret for my Alpaca Api Key"
 
   tags = {

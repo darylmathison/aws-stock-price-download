@@ -44,5 +44,5 @@ variable "alpacaSecretKey" {
 }
 
 variable "symbols_batch_size" {
-  default = 6000
+  default = 400
 }
