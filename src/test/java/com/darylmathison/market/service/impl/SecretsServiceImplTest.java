@@ -2,11 +2,9 @@ package com.darylmathison.market.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -17,6 +15,7 @@ import com.darylmathison.market.model.ApiKeyPair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
 import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRequest;
 import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueResponse;
@@ -72,8 +71,9 @@ class SecretsServiceImplTest {
     String secretName = "test-secret";
 
     // Mock the SecretsManagerClient to throw an exception
-    SecretsManagerException exception = mock(SecretsManagerException.class, RETURNS_DEEP_STUBS);
-    when(exception.awsErrorDetails().errorMessage()).thenReturn("Error message");
+    AwsErrorDetails errorDetails = AwsErrorDetails.builder().errorMessage("error-message").build();
+    SecretsManagerException exception = (SecretsManagerException) SecretsManagerException.builder()
+        .awsErrorDetails(errorDetails).build();
 
     SecretsManagerClient mockClient = mock(SecretsManagerClient.class);
     when(mockClient.getSecretValue(any(GetSecretValueRequest.class))).thenThrow(exception);
@@ -82,11 +82,7 @@ class SecretsServiceImplTest {
     TestableSecretsServiceImpl secretsService = new TestableSecretsServiceImpl(mockClient);
 
     // When
-    String result = secretsService.getSecret(secretName);
-
-    // Then
-    assertNull(result);
-    verify(mockClient).getSecretValue(any(GetSecretValueRequest.class));
+    assertThrows(RuntimeException.class, () ->secretsService.getSecret(secretName));
   }
 
   @Test
